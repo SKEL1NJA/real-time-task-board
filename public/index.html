@@ -72,9 +72,9 @@
         </div>
     </main>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
     <script>
-        const socket = io();
+        const socket = io('https://task-board-backend-uzor.onrender.com');
         const statusEl = document.getElementById('connection-status');
         const taskForm = document.getElementById('task-form');
         const taskTitleInput = document.getElementById('task-title');
@@ -108,7 +108,7 @@
         // Fetch initial tasks from database
         async function fetchTasks() {
             try {
-                const response = await fetch('/api/tasks');
+                const response = await fetch('https://task-board-backend-uzor.onrender.com/api/tasks');
                 tasksState = await response.json();
                 renderBoard();
             } catch (err) {
@@ -162,7 +162,7 @@
             if (!title) return;
 
             try {
-                await fetch('/api/tasks', {
+                await fetch('https://task-board-backend-uzor.onrender.com/api/tasks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title })
@@ -176,7 +176,7 @@
         // Trigger database update for moving task status
         async function moveTask(id, newStatus) {
             try {
-                await fetch(`/api/tasks/${id}`, {
+                await fetch(`https://task-board-backend-uzor.onrender.com/api/tasks/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: newStatus })
@@ -189,7 +189,7 @@
         // Trigger deletion handling
         async function deleteTask(id) {
             try {
-                await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+                await fetch(`https://task-board-backend-uzor.onrender.com/api/tasks/${id}`, { method: 'DELETE' });
             } catch (err) {
                 console.error('Error deleting task asset:', err);
             }
