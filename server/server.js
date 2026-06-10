@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const http = require('http');
 const { Server } = require('socket.io');
+const cors = require('cors');
 const Task = require('./models/Task'); // Import Task Model
 
 const app = express();
@@ -13,6 +14,7 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 5000;
 
+app.use(cors());
 app.use(express.static('public'));
 app.use(express.json());
 
