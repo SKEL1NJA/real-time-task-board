@@ -2,22 +2,92 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Real-Time Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Collaborative Task Board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Real-Time Task Board Test</h1>
-    <p>Open your browser console (F12) to see connection logs.</p>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+    <nav class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800 tracking-tight flex items-center gap-2">
+                📋 LiveTask Board
+            </h1>
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
+                <span class="text-sm text-gray-600 font-medium" id="connection-status">Connecting...</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        
+        <div class="bg-white p-4 rounded-xl shadow-sm mb-8 border border-gray-200">
+            <form id="task-form" class="flex flex-col sm:flex-row gap-3">
+                <input 
+                    type="text" 
+                    id="task-title" 
+                    placeholder="Enter a new task title..." 
+                    required
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                >
+                <button 
+                    type="submit"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2 rounded-lg transition-colors duration-150 text-sm whitespace-nowrap"
+                >
+                    Add Task
+                </button>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col min-h-[500px]">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200">
+                    <h2 class="font-semibold text-gray-700 uppercase tracking-wider text-xs">📌 To Do</h2>
+                    <span id="todo-count" class="bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-0.5 rounded-full">0</span>
+                </div>
+                <div id="todo-list" class="space-y-3 flex-1 overflow-y-auto">
+                    </div>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col min-h-[500px]">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200">
+                    <h2 class="font-semibold text-yellow-700 uppercase tracking-wider text-xs">⚡ In Progress</h2>
+                    <span id="progress-count" class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-0.5 rounded-full">0</span>
+                </div>
+                <div id="progress-list" class="space-y-3 flex-1 overflow-y-auto">
+                    </div>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col min-h-[500px]">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200">
+                    <h2 class="font-semibold text-green-700 uppercase tracking-wider text-xs">✅ Done</h2>
+                    <span id="done-count" class="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-0.5 rounded-full">0</span>
+                </div>
+                <div id="done-list" class="space-y-3 flex-1 overflow-y-auto">
+                    </div>
+            </div>
+
+        </div>
+    </main>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
+        const statusEl = document.getElementById('connection-status');
 
+        // Update connection indicator
         socket.on('connect', () => {
-            console.log(' Connected to server via WebSocket! ID:', socket.id);
+            statusEl.textContent = 'Live Sync Active';
+            statusEl.classList.remove('text-gray-600');
+            statusEl.classList.add('text-green-600');
         });
 
-        socket.on('task_updated', (data) => {
-            console.log(' Received update from another user:', data);
+        socket.on('disconnect', () => {
+            statusEl.textContent = 'Disconnected';
+            statusEl.classList.remove('text-green-600');
+            statusEl.classList.add('text-red-600');
         });
     </script>
 </body>
