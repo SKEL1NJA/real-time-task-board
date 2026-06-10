@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Test</title>
+</head>
+<body>
+    <h1>Real-Time Task Board Test</h1>
+    <p>Open your browser console (F12) to see connection logs.</p>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        socket.on('connect', () => {
+            console.log(' Connected to server via WebSocket! ID:', socket.id);
+        });
+
+        socket.on('task_updated', (data) => {
+            console.log(' Received update from another user:', data);
+        });
+    </script>
+</body>
+</html>
