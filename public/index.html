@@ -76,19 +76,147 @@
     <script>
         const socket = io();
         const statusEl = document.getElementById('connection-status');
+        const taskForm = document.getElementById('task-form');
+        const taskTitleInput = document.getElementById('task-title');
 
-        // Update connection indicator
+        // Column DOM Mappings
+        const columns = {
+            todo: document.getElementById('todo-list'),
+            progress: document.getElementById('progress-list'),
+            done: document.getElementById('done-list')
+        };
+
+        const counts = {
+            todo: document.getElementById('todo-count'),
+            progress: document.getElementById('progress-count'),
+            done: document.getElementById('done-count')
+        };
+
+        // State storage for rendering tracking
+        let tasksState = [];
+
+        // Update real-time connection status indicator
         socket.on('connect', () => {
             statusEl.textContent = 'Live Sync Active';
-            statusEl.classList.remove('text-gray-600');
-            statusEl.classList.add('text-green-600');
+            statusEl.className = 'text-sm text-green-600 font-medium';
         });
-
         socket.on('disconnect', () => {
             statusEl.textContent = 'Disconnected';
-            statusEl.classList.remove('text-green-600');
-            statusEl.classList.add('text-red-600');
+            statusEl.className = 'text-sm text-red-600 font-medium';
         });
+
+        // Fetch initial tasks from database
+        async function fetchTasks() {
+            try {
+                const response = await fetch('/api/tasks');
+                tasksState = await response.json();
+                renderBoard();
+            } catch (err) {
+                console.error('Error loading tasks:', err);
+            }
+        }
+
+        // Render the entire Kanban layout based on local state
+        function renderBoard() {
+            // Clear existing lists
+            Object.values(columns).forEach(col => col.innerHTML = '');
+            
+            // Set up count accumulators
+            const countTracker = { todo: 0, progress: 0, done: 0 };
+
+            tasksState.forEach(task => {
+                countTracker[task.status]++;
+                
+                // Construct clean Task UI element
+                const taskCard = document.createElement('div');
+                taskCard.className = "bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col gap-3 group hover:shadow-md transition-shadow duration-150";
+                taskCard.innerHTML = `
+                    <p class="text-sm font-medium text-gray-800">${task.title}</p>
+                    <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-50">
+                        <button onclick="deleteTask('${task._id}')" class="text-xs text-red-500 hover:text-red-700 font-medium transition-colors">
+                            Delete
+                        </button>
+                        <div class="flex gap-1">
+                            ${task.status !== 'todo' ? `<button onclick="moveTask('${task._id}', 'todo')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] px-2 py-1 rounded font-medium">← To Do</button>` : ''}
+                            ${task.status !== 'progress' ? `<button onclick="moveTask('${task._id}', 'progress')" class="bg-yellow-50 hover:bg-yellow-100 text-yellow-700 text-[10px] px-2 py-1 rounded font-medium">⚡ Work</button>` : ''}
+                            ${task.status !== 'done' ? `<button onclick="moveTask('${task._id}', 'done')" class="bg-green-50 hover:bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded font-medium">Done →</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                if (columns[task.status]) {
+                    columns[task.status].appendChild(taskCard);
+                }
+            });
+
+            // Sync structural counter badges
+            Object.keys(counts).forEach(status => {
+                counts[status].textContent = countTracker[status];
+            });
+        }
+
+        // Submit new task via API
+        taskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = taskTitleInput.value.trim();
+            if (!title) return;
+
+            try {
+                await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title })
+                });
+                taskTitleInput.value = '';
+            } catch (err) {
+                console.error('Error posting task:', err);
+            }
+        });
+
+        // Trigger database update for moving task status
+        async function moveTask(id, newStatus) {
+            try {
+                await fetch(`/api/tasks/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+            } catch (err) {
+                console.error('Error shifting task status:', err);
+            }
+        }
+
+        // Trigger deletion handling
+        async function deleteTask(id) {
+            try {
+                await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+            } catch (err) {
+                console.error('Error deleting task asset:', err);
+            }
+        }
+
+        // --- REAL-TIME EVENT STREAM INTERFACES ---
+
+        socket.on('task_created', (newTask) => {
+            tasksState.unshift(newTask);
+            renderBoard();
+        });
+
+        socket.on('task_updated', (updatedTask) => {
+            const index = tasksState.findIndex(t => t._id === updatedTask._id);
+            if (index !== -1) {
+                tasksState[index] = updatedTask;
+                renderBoard();
+            }
+        });
+
+        socket.on('task_deleted', (deletedId) => {
+            tasksState = tasksState.filter(t => t._id !== deletedId);
+            renderBoard();
+        });
+
+        // Bootstrapping initialization
+        window.addEventListener('DOMContentLoaded', fetchTasks);
     </script>
 </body>
 </html>
